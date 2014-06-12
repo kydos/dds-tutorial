@@ -1,4 +1,4 @@
-# The Data Distribution Service (DDS) Tutorial
+## The Data Distribution Service (DDS) Tutorial
 
 This repository contains the sources for the Data Distribution Service
 Tutorial. This is an effort aimed at providing DDS users with a
@@ -11,13 +11,13 @@ and JavaScript will be coming soon.
 
 The C++ version of the tutorial is available [here](http://bit.ly/dds-tutorial-cxx).
 
-# Code Examples 
+## Code Examples 
 
 The code examples used throughout the tutorial as available as
 projects on github. You can check them out at
 [http://github.com/kydos](http://github.com/kydos).
 
-# Licensing
+## Licensing
 
 This work is made available by [PrismTech](http://prismtech.com) under
 a Creative Commons Attribution-Share Alike 4.0 License (international)
@@ -26,7 +26,7 @@ a Creative Commons Attribution-Share Alike 4.0 License (international)
 The Current Maintainer of this work is [Angelo
 Corsaro](mailto:angelo@icorsaro.net).
 
-# Contributing
+## Contributing
 
 Contribution are welcome, as there are different areas in which the
 tutorial could be expanded. If you would like to help out and get a
