@@ -1,0 +1,465 @@
+\chapter{Reading and Writing Data}\label{Chapter:Read:Write:Data} \index{Data Reader} \index{DataWriter}
+In the previous chapter I covered the definition and semantics of DDS topics, 
+topic-instances and samples. I also went through domains and partitions 
+and the role they play in organizing application data flows. 
+In this chapter I'll examine the mechanisms provided by DDS for 
+reading and writing data. 
+
+\section{Writing Data}\label{Section:Writing:Data} \index{Data Reader}
+As you've seen in the first two chapters, writing data 
+with \ac{DDS} is as simple as calling the write method on the 
+\texttt{DataWriter}. Yet, to make you into a fully proficient \ac{DDS} 
+programmer there are a few more things you should know. 
+Most notably, the relationship between writers and topic-instances life-cycle.
+To explain the difference between topics and topic instances I drew the 
+analogy between \ac{DDS} topics/topic-instances and classes/objects in an 
+Object Oriented Programming language, such as Java or C++. Like objects,  
+topic-instances have (1) an identity provided by their unique key value, 
+and (2) a life-cycle. The topic-instance life-cycle can be implicitly 
+managed through the semantics implied by the \texttt{DataWriter}, or it 
+can be explicitly controlled via the \texttt{DataWriter} API.
+The topic-instances life-cycle transition can have implications on 
+local and remote resource usage, thus it is important that you understand 
+this aspect.
+
+\subsection{Topic-Instances Life-cycle} \index{Topic Instance} \index{Instance life-cycle management}
+Before getting into the details of how the life-cycle is managed, 
+let's see which are the possible states. A topic instance is 
+\texttt{ALIVE} if there is at least one \texttt{DataWriter} that has
+explicitly or implicitly (through a write) registered it.
+An instance is in the \texttt{NOT\_ALIVE\_NO\_WRITERS} 
+state when there are no more \texttt{DataWriters} writing it. 
+Finally, the instance is \texttt{NOT\_ALIVE\_DISPOSED} 
+if it was disposed either implicitly, due to some default \ac{QoS} 
+settings, or explicitly, by means of a specific \texttt{DataWriter}
+API call. The \texttt{NOT\_ALIVE\_DISPOSED} state indicates that the 
+instance is no more relevant for the system and that it won't be 
+written anymore (or any-time soon) by any writer.  
+As a result the resources allocated throughout the system for storing 
+the instance can be freed.  Another way of thinking about this, 
+is that an instance defines a live data element in the \ac{DDS} global 
+data space as far as there are writers for it. This data element ceases 
+to be alive when there are no more writers for it. Finally, once 
+disposed this data entity can be reclaimed from the \ac{DDS} global 
+data space, thus freeing resources.  
+
+\subsection{Automatic Life-cycle Management}
+Let's try to understand the instances life-cycle management with an example. 
+If we look at the code in Listing~\ref{Listing:DDS:Auto:Instance:Management}, 
+and assume this is the only 
+application writing data, the result of the three write operations is 
+to create three new topic instances in the system for the key 
+values associated with the $id = 1,  2,  3$ (we defined the \texttt{TempSensorType}
+in the first installment as having  a single attribute key named id).  
+These instances will be in the \texttt{ALIVE} state as long as this application 
+will be running, and will be automatically registered, we could say 
+associated, with the writer. The default behavior for DDS is then to 
+dispose the topic instances once the \texttt{DataWriter} object is 
+destroyed, thus leading the instances to the \texttt{NOT\_ALIVE\_DISPOSED} 
+state. The default settings can be overridden to simply induce instances' 
+unregistration, causing in this case a transition from \texttt{ALIVE} to 
+\texttt{NOT\_ALIVE\_NO\_WRITERS}.
+
+\lstinputlisting[
+		frame=b,
+		label={Listing:DDS:Auto:Instance:Management},
+		caption={Automatic management of Instance life-cycle.}]
+		{./listing/cxx/auto-instance-lifecycle.cpp}
+
+
+\subsection{Explicit Life-cycle Management}
+Topic-instances life-cycle can also be managed explicitly via the API
+defined on the \texttt{DataWriter}. In this case the application programmer 
+has the control on when instances are registered, unregistered and disposed. 
+Topic-instances registration is a good practice to follow whenever an 
+applications writes an instance very often and requires the lowest latency 
+write. In essence the act of explicitly registering an instance allows the 
+middleware to reserve resources as well as optimize the instance lookup. 
+Topic-instance unregistration provides a mean for telling \ac{DDS} that an 
+application is done with writing a specific topic-instance, thus all the  
+resources locally associated with can be safely released. Finally,  
+disposing topic-instances gives a way of communicating DDS that the instance 
+is no more relevant for the distributed system, thus whenever possible resources 
+allocated with the specific instances should be released both locally and remotely.
+Listing 2 shows and example of how the DataWriter API can be used to register, 
+unregister and dispose topic-instances.  In order to show you the full life-cycle 
+management I’ve changed the default DataWriter behavior to avoid that instances 
+are automatically disposed when unregistered. In addition, to maintain the code 
+compact I take advantage of the new C++11 \texttt{auto} feature which leaves it to the  
+the compiler to infer the left hand side types from the right hand side 
+return-type. Listing 2 shows an application that writes four samples belonging 
+to four different topic-instances, respectively those with $id=0,1,2,3$.  
+The instances with $id=1,2,3$ are explicitly registered by calling the 
+\texttt{DataWriter::register\_instance} method, while the instance with $id=0$ 
+is automatically registered as result of the write on the \texttt{DataWriter}. 
+To show the different possible state transitions, the topic-instance 
+with $id=1$ is explicitly unregistered thus causing it to transition to 
+the \texttt{NOT\_ALIVE\_NO\_WRITER} state; the topic-instance with $id=2$ 
+is explicitly disposed thus causing it to transition to the 
+\texttt{NOT\_ALIVE\_DISPOSED} state.  Finally, the topic-instance with 
+$id=0,3$ will be automatically unregistered, as a result of the destruction 
+of the objects $dw$ and $dwi3$ respectively, thus transitioning to the state 
+\texttt{NOT\_ALIVE\_NO\_WRITER}. Once again, as mentioned above, in this 
+example the writer has been configured to ensure that topic-instances are 
+not automatically disposed upon unregistration.
+
+\subsection{Keyless Topics} \index{Keyless Topics}
+Most of the discussion above has focused on keyed topics, but what about 
+keyless topics? 
+As explained in chapter~\ref{Chapter:Topics:Domain:Partitions}, 
+keyless topics are like singletons, in the sense that there is only one instance. 
+As a result for keyless topics the the state transitions are tied to the 
+lifecycle of the data-writer.
+%%%
+\lstinputlisting[
+		frame=b,
+		label={Listing:DDS:Manual:Instance:Management},
+		caption={Explicit management of topic-instances life-cycle.}]
+		{./listing/cxx/manunal-instance-lifecycle.cpp}
+%%%
+\subsection{Blocking or Non-Blocking Write?}
+One question that you might have at this point is whether the write 
+is blocking or not. The short answer is that the write is non-blocking, 
+however, as we will see later on, there are cases 
+in which, depending on \ac{QoS} settings, the write might block. 
+In these cases, the blocking behaviour is necessary to avoid 
+avoid data-loss. 
+
+
+\section{Accessing Data}
+\ac{DDS} provides a mechanism to select the samples based 
+on their content and state and another to control whether 
+samples have to be read or taken (removed from the cache). 
+
+\subsection{Read vs. Take}\index{read and take operations}
+The \ac{DDS} provides data access through the \texttt{DataReader} class which 
+exposes two semantics for data access: read and the take.
+The read semantics, implemented by the \texttt{DataReader::read} methods, 
+gives access to the data received by the \texttt{DataReader} without removing 
+it from its cache. This means that the data will be again readable 
+via an appropriate read call. Likewise, the  take 
+semantics, implemented by the \texttt{DataReader::take} method, 
+allows to access the data received by the \texttt{DataReader} by removing 
+it from its local cache. This means that once the data is taken, it is 
+no more available for subsequent read or take operations.
+The semantics provided by the  read and take operations allow you to 
+use \ac{DDS} as either a distributed cache or like a queuing system, or both.
+This is a powerful combination that is rarely found in the same middleware platform. 
+This is one of the reasons why \ac{DDS} is used in a variety of systems 
+sometimes as a high-performance distributed cache, other like a high-performance 
+messaging technology, and yet other times as a combination of the two. 
+In addition, the read semantics is useful when using topics to model 
+distributed state, while the take semantics when modeling distributed events.
+
+\subsection{Data and Meta-Data} \index{Data} \index{Meta-Data}
+In the first part of this chapter I showed how the \texttt{DataWriter} 
+can be used to control the life-cycle of  topic-instances.  
+The topic-instance life-cycle along with other information describing properties 
+of received data samples are made available to \texttt{DataReader} and can be used 
+to select the data access via either a read or take. 
+Specifically, each data sample received by a \texttt{DataWriter} has
+associated a \texttt{SampleInfo} describing the property of 
+that sample. These properties includes information on:
+\begin{itemize}
+	\item \textbf{Sample State}. The sample state can be \texttt{READ} 
+	or \texttt{NOT\_READ} depending on whether the sample has already 
+	been read or not. 
+
+	\item \textbf{Instance State.} As explained above, this indicates the 
+	status of the instance as being either \texttt{ALIVE}, 
+	\texttt{NOT\_ALIVE\_NO\_WRITERS}, or \texttt{NOT\_ALI\-VE\_DISPOSED}.
+	
+	\item \textbf{View State.} The view state can be \texttt{NEW} or 
+	\texttt{NOT\_NEW} depending on whether this is the first sample 
+	ever received for the given topic-instance or not.
+\end{itemize}
+The \texttt{SampleInfo} also contains a set of counters that allow to 
+reconstruct the number of times that a topic-instance has performed 
+certain status transition, such as becoming alive after being disposed. 
+Finally, the \texttt{SampleInfo} contains a \texttt{timestamp} for the 
+data and a flag that tells wether the associated data sample is valid or not.  
+This latter flag is important since DDS might generate valid samples info 
+with invalid data to inform about state transitions such as an instance 
+being disposed.
+
+\subsection{Selecting Samples} \index{Samples Selection} \index{Selector API}
+Regardless of whether data are read or taken from \ac{DDS}, the same 
+mechanism is used to express the sample selection. Thus, for brevity, 
+I am going to provide some examples using the \texttt{read} operation
+yet if you want to use the \texttt{take} operation you simply have to 
+replace each occurrence of a \texttt{take} with a \texttt{read}. 
+
+\ac{DDS} allows you to select data based on state and content. State-based 
+selection predicates on the values of the view state, instance state and sample state.
+Content-based selection predicates on the content of the sample. 
+
+\subsubsection{State-based Selection} \index{State based selection}
+For instance, 
+if I am interested in getting all the data received, no matter what the view, 
+instance and sample state would issue read (or a take) as follows:
+
+\begin{lstlisting}[frame=tb]
+  LoanedSamples<TempSensorType> samples = 
+  	dr.select()
+  		.state(DataState.any())
+  		.read();
+\end{lstlisting}
+
+If on the other hand I am interested in only reading (or taking) 
+all samples that have not been read yet, I would issue a read (or take) 
+as follows:
+
+\begin{lstlisting}[frame=tb]
+  LoanedSamples<TempSensorType> samples = 
+  	dr.select()
+  		.state(SampleState.any() << SampleSate.not_read())
+  		.read();
+\end{lstlisting}
+
+If I want to read new valid data, meaning no samples with only a valid \texttt{SampleInfo}, I would  issue a read (or take) as follows: 
+
+\begin{lstlisting}[frame=tb]
+  LoanedSamples<TempSensorType> samples = 
+  	dr.select()
+  		.state(DataState.new_data())
+  		.read();
+\end{lstlisting}
+
+Finally, if I wanted to only read data associated to instances that are making 
+their appearance in the system for the first time, I would issue a read (or take) as follows:
+
+\begin{lstlisting}[frame=tb]
+  LoanedSamples<TempSensorType> samples = 
+  	dr.select()
+  		.state(DataState(SampleState.not_read(), 
+  		                 ViewState.new(), 
+  		                 InstanceState.alive())
+  		.read();
+\end{lstlisting}
+
+Notice that with this kind of read I would only and always get the 
+first sample written for each instance, that's it. Although it might 
+seem a strange use case, this is quite useful for all those applications 
+that need to do something special whenever a new instance makes its appearance 
+in the system for the first time. An example could be a new airplane entering a  
+new region of control, in this case the system might have to do quite a few things 
+that are unique to this specific state transition. 
+
+It is also worth mentioning that if the status is omitted, and a read (or a take) is issued as follows:
+
+\begin{lstlisting}[frame=tb]
+  auto samples = dr.read();
+\end{lstlisting}
+
+
+
+This is equivalent to selecting samples with the 
+\texttt{NOT\_READ\_SAMPLE\_STATE}, \texttt{ALIVE\_INSTANCE\_STATE} and \texttt{ANY\_VIEW\_STATE}.
+
+As a final remark, it is worth pointing out that statuses allow you to select
+data based on its meta-information.  
+
+\subsubsection{Content-based Selection} \index{Content based selection}
+Content-based selection is supported by \ac{DDS} through queries. 
+Although the idea of a query could seem overlapping with that of content-filtering
+(see section~\label{Section:Content:Filtering}) the underlying idea is different.
+Filtering is about controlling the data received by the data reader -- the data that does
+not matches the filter is not inserted in the data reader cache. On the other hand,
+queries are about selecting the data that is in the data reader cache.
+
+The syntax supported by query expression is identical to that used to define 
+filter expression and for convenience is reported on Table~\ref{Table:DDS:Query:Expression}. 
+%%%
+\begin{table}
+\begin{center}
+{\footnotesize\ttfamily
+\begin{tabular}{|c|l|} \hline
+\textbf{Constructed Type} 	&  	\textbf{Example}  			\\ \hline
+              =           	&  	equal  						\\ \hline
+              <>          	&  	not equal					\\ \hline
+              >           	&  	greater than  				\\ \hline
+              <				& 	less than					\\ \hline
+              >=				& 	greater than or equal 		\\ \hline
+              <=				&	less than or equal			\\ \hline
+              BETWEEN		&   between and inclusive range	\\ \hline
+              LIKE			&	matches a string pattern		\\ \hline               
+\end{tabular}}
+\end{center}
+\label{Table:DDS:Query:Expression}
+\caption{Legal operators for content query.}
+\end{table}
+%%%
+
+The execution of the query is completely 
+under the user control and executed in the context of a \texttt{read} or 
+\texttt{take} operation as shown in Listing~\ref{Listing:DDS:Query}.  
+
+
+%%%
+\iftoggle{cpp}{
+	\lstinputlisting[
+		frame=b,
+		label={Listing:DDS:Query},
+		caption={Content Query.}]
+		{./listing/cxx/query.cpp}
+}
+
+%%%
+%%%
+\subsubsection{Instance-based Selection} \index{Instance based selection}
+In some instances you may want to only look at the data coming from a specific
+topic instance. As instances are identified by value of the key attributes you
+may be tempted to use content filtering discriminate among them. Although this 
+would work perfectly fine, it is not the most efficient way of selecting an
+instance. \ac{DDS} provide another mechanism, that allows you to pinpoint the instance
+you are interested in a more efficient manner than content filtering. 
+In essence, each instance has associated an instance handle, this can be used 
+to access the data from a given instance in a very efficient manner.
+
+Listing~\ref{Listing:DDS:Instance:Selection} shows how this can be done.
+
+%%%
+\iftoggle{cpp}{
+	\lstinputlisting[
+		frame=b,
+		label={Listing:DDS:Instance:Selection},
+		caption={Instance-based selection.}]
+		{./listing/cxx/instance-selection.cpp}
+}
+
+\subsection{Iterators or Containers?} \index{Iterators and Containers}
+The examples we have seen so far where loaning the data from DDS, in other terms
+you did not have to provide the storage for the samples. The advantage of 
+this style of read is allows zero copy reads. However, if you want to store the 
+data in a container of your choice you can use the iterator based read/take operations.
+as iterator-based reads and takes. 
+
+The iterator-based read/take API supports both forward iterators as well as 
+back-inserting iterators. These API allows you to read (or take) data into 
+whatever structure you'd like, as far as you can get a forward or a back-inserting 
+iterator for it. If we focus on the forward-iterator based API, the back-inserting 
+is pretty similar, then you might be able to read data as follows:
+
+
+\begin{lstlisting}[frame=tb]
+   Sample<TempSensorType>* samples = ...; // Get hold of some memory
+   uint32_t n = dr.read(samples, max_samples);
+   
+   std::vector<Sample<TempSensorType> vsamples(max_samples);
+   n = dr.read(vsamples.begin(), max_samples);
+\end{lstlisting}
+
+\subsection{Blocking or Non-Blocking Read/Take?} 
+The DDS read and take are always non-blocking. If no data is available to read 
+then the call will return immediately. Likewise if there is less data than requested 
+the call will gather what available and return right away. The non-blocking nature of 
+read/take operations ensures that these can be safely used by applications that poll 
+for data.
+
+\section{Waiting and being Notified}
+One way of coordinating with DDS is to have the application poll for data 
+by performing either a read or a take every so often. Polling might be the 
+best approach for some classes of applications, the most common example 
+being control applications that execute a control loop or a cyclic executive.  
+In general, however, applications might want to be notified of the availability 
+of data or perhaps be able to wait for its availability, as opposed to poll. 
+\ac{DDS} supports both synchronous and asynchronous coordination by means of 
+wait-sets and listeners.
+
+\subsection{Waitsets} \index{Waitsets}
+\ac{DDS} provides a generic mechanism for waiting on conditions. 
+One of the supported kind of conditions are read conditions which 
+can be used to wait for the availability data on one or more 
+\texttt{DataReaders}. This functionality is provided by \ac{DDS} via the 
+\texttt{Waitset} class which can be seen as an object oriented version of the 
+Unix \texttt{select}. 
+
+%%%
+\iftoggle{cpp}{
+	\lstinputlisting[
+		frame=b,
+		label={Listing:DDS:Waitset},
+		caption={Using WaitSet to wait for data availability.}]
+		{./listing/cxx/waitset.cpp}
+}
+
+
+\ac{DDS} conditions can be associated with functor objects which are 
+then used to execute application-specific logic when the condition 
+is triggered. If we wanted to wait for temperature samples to be 
+available we could create a read-condition on our \texttt{DataReader} 
+by passing it a functor such as the one showed in Listing~\ref{}.  
+Then as shown in Listing~\ref{Listing:DDS:Waitset}, we would create a 
+\texttt{Waitset} and attach the condition to it. 
+At this point, we can synchronize on 
+the availability of data, and there are two ways of doing it. 
+One approach is to invoke the \texttt{Waitset::wait} method which 
+returns the list of active conditions. These active conditions can then be 
+iterated upon and their associated functors can be executed. 
+The other approach is to invoke the \texttt{Waitset::dispatch}. 
+In this case the infrastructure will automatically invoke the 
+functor associated with triggered conditions before unblocking. 
+
+Notice that, in both cases, the execution of the functor happens in 
+an application thread. 
+
+\subsection{Listeners} \index{Listeners}
+Another way of finding-out when there is data to be read, is 
+to take advantage of the events raised by DDS and notified 
+asynchronously to registered handlers.  Thus, if we wanted 
+an handler to be notified of the availability of data, we would 
+connect the appropriate handler with the \texttt{on\_data\_available} 
+event raised by the \texttt{DataReader}. Listing~\ref{Listing:DDS:Listener} 
+shows how this can be done.
+%%
+
+%%%
+\iftoggle{cpp}{
+	\lstinputlisting[
+		frame=b,
+		label={Listing:DDS:Listener},
+		caption={Using a listener to receive notification of data availability.}]
+		{./listing/cxx/listener.cpp}
+}
+%%
+The \texttt{NoOpDataReaderListener} is a utility class provided by the \ac{DDS}
+API that provides a trivial implementation for all the operation defined as
+part of the listener. This way, you can only override those that are relevant 
+for your application.
+
+When using C++11 however it would be nice to be able to use a lambda function
+to define the actions to execute to handle a specific event. Although this
+feature is not currently supported by the \ac{DDS} C++ API, there are some 
+libraries, such as the one available at \url{https://github.com/kydos/dds-cpp11} 
+that make it possible.
+
+%%%
+\iftoggle{cpp}{
+	\lstinputlisting[
+		frame=b,
+		label={Listing:DDS:Listener11},
+		caption={Using a C++ lambda to define the action to be execute in response of a data availability notification.}]
+		{./listing/cxx/listener11.cpp}
+}
+%%
+The event handling mechanism allows you to bind anything you want 
+to a \ac{DDS} event, meaning that you could bind a function, a 
+class method, or a functor. The only contract you need to comply 
+with is the signature that is expected by the infrastructure. 
+For example,  when dealing with the \texttt{on\_data\_available} 
+event you have to register a callable entity that accepts a single 
+parameter of type \texttt{DataReader}. 
+Finally, something worth pointing out is that the handler code 
+will execute in a middleware thread. As a result, when using listeners 
+you should try to minimize the time spent in the listener itself.
+
+
+\section{Summary}
+In this chapter I have presented the various aspects involved in writing 
+and reading data with DDS. I went through the topic-instance life-cycle, 
+explained how that can be managed via the \texttt{DataWriter} and showcased 
+all the meta-information available to \texttt{DataReader}. I also went into 
+explaining wait-sets and listeners and how these can be used to receive 
+indication of when data is available. 
+At this point my usual suggestion is that you try to compile and run the examples 
+and try to experiment a bit by yourself.

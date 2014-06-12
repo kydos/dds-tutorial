@@ -1,0 +1,163 @@
+\documentclass[11pt,a4paper,twoside]{book}
+\usepackage{etoolbox}
+\usepackage[utf8]{inputenc}
+% \usepackage{fullpage}                          % Widen page margin
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{lmodern}
+\usepackage{makecell}
+\usepackage{lipsum}
+% \usepackage{cclicenses}
+\usepackage{ccicons}
+
+\usepackage[colorlinks,linktoc=all]{hyperref}              % Color links
+\usepackage[printonlyused,withpage]{acronym}   % Acronyms
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{listings}                          % Code synthax highlighting package
+\usepackage{lstlang1}                          % C++ settings
+\usepackage{courier}
+
+\usepackage[colorinlistoftodos, textwidth=4cm, shadow]{todonotes} % Todo notes
+\usepackage[displaymath, tightpage]{preview}
+\usepackage{makeidx}
+
+%%% Hyper-Links Setup %%%
+\hypersetup{
+    colorlinks,%
+    linkcolor=black,%
+    citecolor=Orchid,%
+%    filecolor=black,%
+    urlcolor=CadetBlue
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Auto-Indexing for Acronyms %%%
+\let\oldac\ac
+\renewcommand*{\ac}[1]{\oldac{#1}\index{#1}}
+%%%
+
+%%% Code Color Coding %%%
+\definecolor{lightgray}{rgb}{0.95,0.95,0.95}
+
+%\lstloadlanguages{[ISO]C++, Java}
+% Check Dokumentation for further languages ...
+         %[Visual]Basic
+         %Pascal
+         %C
+
+         %XML
+         %HTML
+ %        Java
+% }
+\lstset{
+	language=[ISO]C++,
+	basicstyle=\footnotesize\ttfamily, 
+	extendedchars=true,         
+	breaklines=false,            
+	keywordstyle=\color{MidnightBlue}\bfseries, 
+	commentstyle=\color{LimeGreen},
+	stringstyle=\color{Orchid}\ttfamily, 
+	morekeywords={boolean, octet, wchar, string, wstring, sequence, fixed,}
+}  
+	
+%%\lstset{
+%%		 language=[ISO]C++,
+%%         basicstyle=\footnotesize\ttfamily, 
+%%%         numbers=left,               
+%%         numberstyle=\tiny,          
+%%%         stepnumber=2,               
+%%%         numbersep=5pt,              
+%%         tabsize=2,                  
+%%         extendedchars=true,         
+%%%         breaklines=false,            
+%%         keywordstyle=\color{BrickRed}\bfseries, 
+%%         frame=b,         
+%% %        keywordstyle=[1]\textbf,    
+%% %        keywordstyle=[2]\textbf,    %
+%% %        keywordstyle=[3]\textbf,    %
+%% %        keywordstyle=[4]\textbf,
+%%% 
+%%   		 commentstyle=\color{LimeGreen},   
+%%%   		 morecomment=[l][\color{Gray}]{//},
+%%%   		 morecomment=[s][\color{Gray}]{/*}{*/}, 
+%%%   		 morestring=[b][\color{OliveGreen}]{"},
+%%%   		 classoffset=0,
+
+%%%   		 morekeywords={int,long, char, float, double},keywordstyle=\color{RubineRed},classoffset=1,
+%%%   		 morekeywords={for, if, while, catch, throw, break, switch, new, delete, namespace},keywordstyle=\color{RoyalPurple},
+%%%   		 classoffset=0,
+%%         stringstyle=\color{Orchid}\ttfamily, 
+%%         showspaces=false,           
+%%         showtabs=false,             
+%%         xleftmargin=17pt,
+%%         framexleftmargin=17pt,
+%%         framexrightmargin=5pt,
+%%         framexbottommargin=4pt,
+%%         %backgroundcolor=\color{lightgray},
+%%         showstringspaces=false      
+% }
+ 
+    %\DeclareCaptionFont{blue}{\color{blue}} 
+
+  %\captionsetup[lstlisting]{singlelinecheck=false, labelfont={blue}, textfont={blue}}
+  \usepackage{caption}
+\DeclareCaptionFont{white}{\color{white}}
+\DeclareCaptionFormat{listing}{\colorbox[cmyk]{0.43, 0.35, 0.35,0.01}{\parbox{\textwidth}{\hspace{15pt}#1#2#3}}}
+\captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white, singlelinecheck=false, margin=0pt, font={bf,footnotesize}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%% Programming Language Toggles
+\newtoggle{cpp}
+\newtoggle{java}
+\newtoggle{scala}
+
+%% Define toggle for the programming language
+\toggletrue{cpp}
+\togglefalse{java}
+\togglefalse{scala}
+
+
+\author{
+	Angelo Corsaro\\ 
+	Chief Technology Officer\\
+	PrismTech\\
+	\href{mailto:angelo.corsaro@prismtech.com}{angelo.corsaro@prismtech.com}
+}
+\title{ \huge The Data Distribution Service Tutorial}
+\date{}
+\makeindex
+\begin{document}
+
+% \listoftodos
+\maketitle
+\thispagestyle{empty}
+\input{copyright}
+\pagestyle{headings}
+\setcounter{page}{1}
+\pagenumbering{roman}
+\tableofcontents
+\setcounter{page}{1}
+\pagenumbering{arabic}
+\input{ch1}
+\mainmatter
+\input{ch2}
+\input{ch3}
+\input{ch4}
+\appendix
+\input{appendixA}
+\backmatter
+\input{ac2ronyms}
+%%%
+%%% Index
+%%%
+\printindex
+%%%
+%%% Bibliography
+%%%
+\bibliography{biblio}{ }
+\bibliographystyle{plain}
+
+\end{document}

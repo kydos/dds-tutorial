@@ -1,0 +1,25 @@
+\chapter{Online Resources}~\label{Appendix:A}
+\section{Examples Source Code}
+All the examples presented throughout the Tutorial are available online at 
+\iftoggle{cpp}{
+	\url{https://github.com/kydos/dds-tutorial-cpp}.
+}
+
+The \texttt{README.md} provides all the information necessary to install and run 
+the examples.
+
+
+\section{Getting a DDS Implementation}
+\iftoggle{cpp}{
+At the time of writing, the only open source, as well as commercial, \ac{DDS} implementation
+that supports the new C++ API is \href{http://www.opensplice.org/}{OpenSplice DDS} which is 
+freely available at \url{http://www.opensplice.org}.
+}
+
+
+\section{C++11 Considerations}
+Although some of the examples in this tutorial take advantage of C++11, the new \ac{DDS} C++ API can also be used with C++03 compilers. 
+That said, should you have possibility of using a C++11 compiler, then there are 
+some additional aspects of the language that can be enabled. If you are interested in
+learning more take a look at the following GitHub project \url{https://github.com/kydos/dds-cpp11}
+
