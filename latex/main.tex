@@ -1,7 +1,7 @@
 \documentclass[11pt,a4paper,twoside]{book}
-\usepackage{etoolbox}
+\usepackage{etoolbox}                          % required by \iftoggle
 \usepackage[utf8]{inputenc}
-% \usepackage{fullpage}                          % Widen page margin
+% \usepackage{fullpage}                        % Widen page margin
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
@@ -9,21 +9,19 @@
 \usepackage{lmodern}
 \usepackage{makecell}
 \usepackage{lipsum}
-% \usepackage{cclicenses}
 \usepackage{ccicons}
 
-\usepackage[colorlinks,linktoc=all]{hyperref}              % Color links
+\usepackage[colorlinks,linktoc=all]{hyperref}  % Color links
 \usepackage[printonlyused,withpage]{acronym}   % Acronyms
-\usepackage[usenames,dvipsnames]{color}
+\usepackage[usenames,dvipsnames]{color}        % named colors such as CadetBlue
 \usepackage{listings}                          % Code synthax highlighting package
 \usepackage{lstlang1}                          % C++ settings
 \usepackage{courier}
 
 \usepackage[colorinlistoftodos, textwidth=4cm, shadow]{todonotes} % Todo notes
-\usepackage[displaymath, tightpage]{preview}
 \usepackage{makeidx}
 
-%%% Hyper-Links Setup %%%
+%%%% Hyper-Links Setup %%%
 \hypersetup{
     colorlinks,%
     linkcolor=black,%
@@ -31,7 +29,7 @@
 %    filecolor=black,%
     urlcolor=CadetBlue
 }
-%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Auto-Indexing for Acronyms %%%
 \let\oldac\ac
@@ -129,10 +127,11 @@
 \title{ \huge The Data Distribution Service Tutorial}
 \date{}
 \makeindex
-\begin{document}
 
+\begin{document}
 % \listoftodos
 \maketitle
+
 \thispagestyle{empty}
 \input{copyright}
 \pagestyle{headings}

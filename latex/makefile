@@ -2,6 +2,9 @@ all:
 	latex main
 	dvipdf main.dvi main.pdf
 
+base:
+	latex base
+	dvipdf base.dvi base.pdf
 
 deep:
 	latex main
