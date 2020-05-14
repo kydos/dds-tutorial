@@ -1,88 +1,49 @@
-cmake_minimum_required (VERSION 2.6)
-set(CMAKE_MODULE_PATH ../../cmake)
-
-# This is your project name
-project (quoter)
-
-include (MacroOpenSplice)
-include (osmacros)
-find_package (OpenSplice REQUIRED)
-# If you need to add external libraries dependencies, add them here
-# find_package (YourPackage REQUIRED)
-
 #
-# You may add your include directories below
+# Copyright(c) 2006 to 2018 ADLINK Technology Limited and others
 #
-include_directories(
-  ${PROJECT_SOURCE_DIR}
-  ${OpenSplice_INCLUDE_DIRS}
-  ../../src/
-)
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v. 2.0 which is available at
+# http://www.eclipse.org/legal/epl-2.0, or the Eclipse Distribution License
+# v. 1.0 which is available at
+# http://www.eclipse.org/org/documents/edl-v10.php.
+#
+# SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
+#
+cmake_minimum_required(VERSION 3.5)
+set(Boost_INCLUDE_DIR /Users/kydos/tool/boost_1_73_0)
+set(Boost_LIBRARY_DIR /Users/kydos/tool/boost_1_73_0/stage/lib)
+
+project("TempControl")
+find_package(Idlpp-cxx REQUIRED)
+find_package(CycloneDDS REQUIRED)
+find_package(Boost REQUIRED)
+
+if (NOT TARGET CycloneDDS_CXX_API::ddscxx)
+    # Find the CycloneDDS_CXX_API package. If it is not in a default location, try
+    # finding it relative to the example where it most likely resides.
+    find_package(CycloneDDS_CXX_API REQUIRED PATHS "${CMAKE_CURRENT_SOURCE_DIR}/../../../..")
+endif()
+
+include_directories( ${Boost_INCLUDE_DIR} )
+link_directories( ${Boost_LIBRARY_DIR} )
+link_libraries(boost_program_options)
+
+# This is a convenience function, provided by the CycloneDDS_CXX_API package,
+# that will supply a library target related the the given idl file.
+# In short, it takes the idl file, generates the source files with
+# the proper data types and compiles them into a library.
+idl_ddscxx_generate(temp_ctrl "TempControl.idl")
+
+# Both executables have only one related source file.
+add_executable(tspub tspub.cpp util.cpp)
+add_executable(tssub tssub.cpp util.cpp)
+
+# Both executables need to be linked to the idl data type library and
+# the ddsc API library.
+target_link_libraries(tspub temp_ctrl CycloneDDS_CXX_API::ddscxx )
 
 
-# Define the idl file that you want to be compiled
-set (idls quoter.idl)
+target_link_libraries(tssub temp_ctrl CycloneDDS_CXX_API::ddscxx)
 
-
-foreach(idl ${idls})
-	OpenSplice_IDLGEN (${idl})
-        string (REGEX REPLACE "\(.*\).idl" "gen/\\1.cpp" VARS_1 ${idl})
-        string (REGEX REPLACE "\(.*\).idl" "gen/\\1.h" VARS_2 ${idl})
-        string (REGEX REPLACE "\(.*\).idl" "gen/\\1Dcps.cpp" VARS_3 ${idl})
-        string (REGEX REPLACE "\(.*\).idl" "gen/\\1Dcps.h" VARS_4 ${idl})
-        string (REGEX REPLACE "\(.*\).idl" "gen/\\1Dcps_impl.cpp" VARS_5 ${idl})
-        string (REGEX REPLACE "\(.*\).idl" "gen/\\1Dcps_impl.h" VARS_6 ${idl})
-        string (REGEX REPLACE "\(.*\).idl" "gen/\\1SplDcps.cpp" VARS_7 ${idl})
-        string (REGEX REPLACE "\(.*\).idl" "gen/\\1SplDcps.h" VARS_8 ${idl})
-        string (REGEX REPLACE "\(.*\).idl" "gen/ccpp_\\1.h" VARS_9 ${idl})
-	set(OpenSplice_DATAMODEL ${OpenSplice_DATAMODEL} ${VARS_1} ${VARS_2} ${VARS_3} ${VARS_4} ${VARS_5} ${VARS_6} ${VARS_7} ${VARS_8} ${VARS_9})
-endforeach(idl)
-
-set (DW_SOURCES
-  quoter.cpp
-)
-
-set (DR_SOURCES
-  logger.cpp
-)
-
-set (RDR_SOURCES
-  rlogger.cpp
-)
-
-
-set (EXE_DW quoter)
-set (EXE_DR logger)
-set (EXE_RDR rlogger)
-
-set (DATAMODEL datamodel)
-
-add_executable (${EXE_DW} ${DW_SOURCES})
-add_executable (${EXE_DR} ${DR_SOURCES})
-add_executable (${EXE_RDR} ${RDR_SOURCES})
-add_library (${DATAMODEL} STATIC ${OpenSplice_DATAMODEL})
-
-add_definitions (
- ${OpenSplice_DEFINITIONS}
- ${DEFINITIONS}
-)
-
-target_link_libraries (
-  ${DATAMODEL} 
-  ${OpenSplice_LIBRARIES}
-)
-
-target_link_libraries (${EXE_DW}
- ${OpenSplice_LIBRARIES}
- ${DATAMODEL} 
-)
-
-target_link_libraries (${EXE_DR}
- ${OpenSplice_LIBRARIES}
- ${DATAMODEL} 
-)
-
-target_link_libraries (${EXE_RDR}
- ${OpenSplice_LIBRARIES}
- ${DATAMODEL} 
-)
+set_property(TARGET tspub PROPERTY CXX_STANDARD 11)
+set_property(TARGET tssub PROPERTY CXX_STANDARD 11)

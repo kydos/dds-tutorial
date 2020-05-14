@@ -6,7 +6,9 @@
 #include <iostream>
 
 // -- Custom Include
-#include "gen/ccpp_TempControl.h"
+#include "TempControl_DCPS.hpp"
+
+using namespace tutorial;
 
 extern const unsigned long long ONE_SECOND;
 extern const unsigned int       DEFAULT_SAMPLE_NUM;
@@ -26,7 +28,7 @@ struct tssub_options {
 // Command line options for the tspub program
 struct tspub_options {
   unsigned short id;
-  TemperatureScale scale;
+  tutorial::TemperatureScale scale;
   unsigned int samples;
   timespec period; // in msec
   float t0;  

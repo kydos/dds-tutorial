@@ -4,53 +4,47 @@
 #include <boost/program_options.hpp>
 // -- SimD includes
 #include <dds/dds.hpp>
-#include <gen/ccpp_TempControl.h>
+#include "TempControl_DCPS.hpp"
 // -- Custom Include
 #include "util.hpp"
 
-// Does some C++ magic required by SimD
-REGISTER_TOPIC_TRAITS(TempSensorType);
+using namespace tutorial;
+using namespace dds;
+using namespace dds::core;
+using namespace dds::core::policy;
+using namespace org::eclipse;
 
 const unsigned short tsPrio = 10;
 int main(int argc, char* argv[]) {
+
   try {
     // Parse command line args
     tssub_options opt = parse_tssub_args(argc, argv);    
-    // Init the SimD runtime
-    dds::Runtime runtime("");    
-    // Create the "TempSensor" Topic 
-    dds::TopicQos tqos;
-    dds::Duration latency_budget = {2, 0};
-    dds::Duration deadline = {4, 0};
-    tqos.set_latency_budget(latency_budget);
-    tqos.set_deadline(deadline);
-    tqos.set_priority(tsPrio);
-    dds::Topic<TempSensorType> tsTopic("TempSensor", tqos);    
-    // Create the DataReader
-    dds::DataReaderQos drqos(tqos);
-    dds::DataReader<TempSensorType> dr(tsTopic, drqos);
-    // Declare the containers
-    TempSensorTypeSeq data;
-    DDS::SampleInfoSeq status;
+    
+    dds::domain::DomainParticipant dp(cyclonedds::domain::default_id());
+    dds::topic::qos::TopicQos tqos = 
+      dp.default_topic_qos() << LatencyBudget(Duration(2,0)) << Deadline(Duration(4,0));
+
+    auto topic = dds::topic::Topic<TempSensorType>(dp, "TempSensorTopic", tqos);
+    auto sub = dds::sub::Subscriber(dp);
+    auto dr = dds::sub::DataReader<TempSensorType>(sub, topic, tqos);
+
     
     // Poll & Sleep untill you've not read opt.samples
     unsigned int count = 0;
     while (count < opt.samples) {
-      // Read data from DDS
-      dr.read(data, status);
-      count += data.length();
-      // Display all the read samples
-      for (unsigned int i = 0; i < data.length(); ++i) {
-	std::cout << data[i] << std::endl;
+      dds::sub::LoanedSamples<TempSensorType> samples;
+      samples = dr.read();      
+      for (auto it = samples.begin(); it != samples.end(); ++it) {
+        count++;
+        std::cout << (it->data()) << std::endl;        
       }
-      // Return the loaned memory to DDS.
-      dr.return_loan(data, status); 
-      // Sleep a bit before issuing another read
-      nanosleep(&opt.period, 0);
-    }
+      nanosleep(&opt.period, 0);        
+    }                  
   }
   catch (...) {
     // Do nothing...
   }
+
   return 0;
 }

@@ -1,3 +1,4 @@
+module tutorial {
 
 enum TemperatureScale {
   CELSIUS, 
@@ -12,3 +13,5 @@ struct TempSensorType {
   TemperatureScale scale;
 };
 #pragma keylist TempSensorType id
+
+};

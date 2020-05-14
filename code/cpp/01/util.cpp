@@ -5,18 +5,19 @@
 // -- Std C++ Include
 #include <iostream>
 
+using namespace tutorial;
 
 const unsigned long long ONE_SECOND = 1E9;
 const unsigned int       DEFAULT_SAMPLE_NUM = 1E3;
 const unsigned int       DEFAULT_SENSOR_ID = 0;
-const TemperatureScale   DEFAULT_TEMP_SCALE = CELSIUS;
+const TemperatureScale   DEFAULT_TEMP_SCALE = TemperatureScale::CELSIUS;
 const float              T0 = 25.0F;
 const float              DT = 15;
 const float              H0 = 0.5F;
 const float              DH = 0.2;
 
 timespec msec2timespec(unsigned long long msec) {
-  unsigned long int nsec = msec * 1E6;
+  long int nsec = msec * 1E6;
   timespec ts = {0, nsec};
   // nsec has to be <= 999999999
   
@@ -32,13 +33,13 @@ TemperatureScale char2tempscale(char s) {
   TemperatureScale scale;
   switch (s) {
     case 'C': 
-      scale = CELSIUS;
+      scale = TemperatureScale::CELSIUS;
       break;
     case 'F':
-      scale = FAHRENHEIT;
+      scale = TemperatureScale::FAHRENHEIT;
       break;
     case 'K':
-      scale = KELVIN;
+      scale = TemperatureScale::KELVIN;
       break;
     default:
       throw std::range_error("Unknown Temperature Scale");
@@ -49,16 +50,20 @@ TemperatureScale char2tempscale(char s) {
 char scale_name[3] = {'C', 'F', 'K'};
 
 char tempscale2char(TemperatureScale scale) {
-  return scale_name[scale];
+  switch (scale) {
+    case TemperatureScale::CELSIUS: return 'C';    
+    case TemperatureScale::FAHRENHEIT: return 'F';    
+    case TemperatureScale::KELVIN: return 'K';    
+  }   
 }
 
 std::ostream&
 operator << (std::ostream& os, const TempSensorType& ts)
 {
-  os << "(id = " << ts.id  
-     << ", temp = " << ts.temp
-      << ", hum = " << ts.hum
-     << ", scale = " << tempscale2char(ts.scale)
+  os << "(id = " << ts.id()  
+     << ", temp = " << ts.temp()
+      << ", hum = " << ts.hum()
+     << ", scale = " << tempscale2char(ts.scale())
      << ")";
      
   return os;
